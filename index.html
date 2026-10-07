@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghostshell</title>
+<meta name="description" content="Ghostshell: ein Hacking-Rätsel im Terminal. Finde die Flaggen in fünf Systemen.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306100a'/%3E%3Cpath d='M17 20 31 32 17 44' fill='none' stroke='%233dff8f' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M36 46h14' stroke='%233dff8f' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#06100a;--panel:#0b1a10;--line:#1d4a2c;--g:#3dff8f;--g2:#bfffd4;--dim:#5d9a75;--amb:#ffb000;--red:#ff6b6b;--mono:"VT323","Courier New",monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--g2);font-family:var(--mono);font-size:1.3rem;line-height:1.3}
+body{min-height:100vh;padding:18px clamp(12px,3vw,32px) 40px;background:radial-gradient(ellipse 80% 45% at 50% 0,#12331e,transparent),var(--bg);text-shadow:0 0 6px rgba(61,255,143,.35)}
+.top{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-weight:400;font-size:clamp(2.4rem,7vw,3.6rem);color:var(--g);text-shadow:0 0 16px rgba(61,255,143,.6);letter-spacing:.04em}
+.back{font:inherit;color:var(--g2);text-decoration:none;border:2px solid var(--line);border-radius:999px;padding:3px 16px;background:var(--panel)}
+.back:hover{border-color:var(--g);color:var(--g)}
+.back:focus-visible{outline:3px solid var(--g);outline-offset:3px}
+.game{max-width:1100px;margin:18px auto 0;display:grid;gap:18px}
+@media(min-width:900px){.game{grid-template-columns:1fr 310px;align-items:start}}
+.term{position:relative;display:flex;flex-direction:column;height:min(72vh,640px);min-height:380px;background:#050d08;border:2px solid var(--line);border-radius:14px;overflow:hidden;
+  box-shadow:0 0 0 1px #000,0 0 44px rgba(61,255,143,.12)}
+.term::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 1px,transparent 1px 3px)}
+.bar{display:flex;align-items:center;gap:7px;padding:8px 14px;background:#0d2315;border-bottom:1px solid var(--line);color:var(--dim)}
+.bar i{width:11px;height:11px;border-radius:50%;background:var(--red)}.bar i:nth-child(2){background:var(--amb)}.bar i:nth-child(3){background:var(--g)}
+.bar span{margin-left:8px}
+.out{flex:1;overflow:auto;padding:12px 16px;white-space:pre-wrap;word-break:break-word}
+.out div{min-height:1.3em}
+.line{display:flex;gap:10px;align-items:center;padding:8px 16px 12px;border-top:1px solid var(--line);position:relative;z-index:1}
+.line:focus-within{background:rgba(61,255,143,.06)}
+.ps{color:var(--g);white-space:nowrap}
+input{flex:1;min-width:0;background:none;border:0;outline:0;color:#fff;font:inherit;caret-color:var(--g);caret-shape:block;text-shadow:inherit}
+.err{color:var(--amb)}.bad{color:var(--red)}.ok{color:var(--g)}.dim{color:var(--dim)}.cmd{color:#fff}
+.mission{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.mission h2{margin:0;font-weight:400;font-size:1.7rem;color:var(--amb)}
+.mission p{margin:6px 0 10px}
+.lv{color:var(--dim)}
+.mission dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:10px 0 0;font-size:1.1rem;border-top:1px dashed var(--line);padding-top:10px}
+.mission dt{color:var(--g)}.mission dd{margin:0;color:var(--dim)}
+.foot{max-width:1100px;margin:16px auto 0;color:var(--dim);font-size:1.05rem}
+.foot button{font:inherit;color:var(--dim);background:none;border:1px solid var(--line);border-radius:999px;padding:0 12px;cursor:pointer}
+.foot button:hover{color:var(--g);border-color:var(--g)}
+.foot button:focus-visible{outline:3px solid var(--g);outline-offset:3px}
+</style>
+</head>
+<body>
+<header class="top"><h1>Ghostshell</h1><a class="back" href="https://iamera.github.io/GameHub/">← Alle Spiele</a></header>
+<main class="game">
+  <section class="term" id="term" aria-label="Terminal">
+    <div class="bar"><i></i><i></i><i></i><span id="title">ghost@ebene-1</span></div>
+    <div class="out" id="out" role="log"></div>
+    <label class="line"><span class="ps" id="ps"></span><input id="in" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Befehl eingeben"></label>
+  </section>
+  <aside class="mission">
+    <p class="lv" id="lv"></p>
+    <h2 id="mt"></h2>
+    <p id="mm"></p>
+    <dl>
+      <dt>ls [-a]</dt><dd>Dateien zeigen</dd>
+      <dt>cd, pwd</dt><dd>Ordner wechseln</dd>
+      <dt>cat</dt><dd>Datei lesen</dd>
+      <dt>grep</dt><dd>Zeilen filtern</dd>
+      <dt>decode</dt><dd>b64, rot13, hex</dd>
+      <dt>unlock</dt><dd>Datei öffnen</dd>
+      <dt>submit</dt><dd>Flagge senden</dd>
+      <dt>hint</dt><dd>Hinweis</dd>
+    </dl>
+  </aside>
+</main>
+<div class="foot">Tab vervollständigt, Pfeil hoch holt alte Befehle. Fortschritt wird im Browser gespeichert. <button id="reset" type="button">Neu anfangen</button></div>
+
+<script>
+(function(){
+  var KEY="ghostshell-v1",$=function(id){return document.getElementById(id)};
+  function rot13(s){return s.replace(/[a-z]/gi,function(c){var b=c<="Z"?65:97;return String.fromCharCode((c.charCodeAt(0)-b+13)%26+b)})}
+  function pad(n){return (n<10?"0":"")+n}
+  function genLog(){
+    var U=["anna","ben","clara","dev","eva"],A=["login ok","logout","upload 3 files","password reset","cache cleared","ping ok"],L=[];
+    for(var i=0;i<64;i++)L.push("["+pad(8+Math.floor(i/6))+":"+pad((i*7)%60)+"] "+U[i%5]+" "+A[(i*3)%6]);
+    L.splice(37,0,"[03:14] debug token=GHOST{grep_is_your_friend}");return L.join("\n");
+  }
+  var LV=[
+    {n:"Der Türsteher",m:"Du bist drin. Finde die Flagge (Format GHOST{…}) und sende sie mit submit.",flag:"GHOST{hello_world}",
+     h:["Mit ls siehst du, welche Dateien im Ordner liegen.","Mit cat <datei> liest du eine Datei.","Lies erst readme.txt, dann flag.txt."],
+     fs:{home:{ghost:{"readme.txt":"Willkommen im System, Geist.\nMit 'ls' siehst du Dateien, mit 'cat <datei>' liest du sie.\nDie Flagge liegt in flag.txt. Sende sie mit: submit <flagge>","flag.txt":"GHOST{hello_world}"}}}},
+    {n:"Versteckt",m:"Nicht alles steht in der Liste. Manche Dateien verstecken sich.",flag:"GHOST{dotfiles_are_sneaky}",
+     h:["Dateien mit einem Punkt am Anfang sind versteckt.","ls -a zeigt auch versteckte Dateien.","Lies die Datei .vault."],
+     fs:{home:{ghost:{"notes.txt":"Hier ist nichts Interessantes.\nAber hast du wirklich alles gesehen?",".vault":"GHOST{dotfiles_are_sneaky}"}}}},
+    {n:"Nadel im Heuhaufen",m:"Ein riesiges Logfile versteckt ein Token. Such gezielt, statt alles zu lesen.",flag:"GHOST{grep_is_your_friend}",
+     h:["Logs liegen oft unter /var/log.","Wechsle mit cd /var/log dorthin und nutze ls.","grep token server.log zeigt nur passende Zeilen."],
+     fs:{home:{ghost:{"todo.txt":"Logs prüfen: /var/log\nTipp: grep <wort> <datei> filtert Zeilen."}},var:{log:{"server.log":genLog(),"boot.log":"Boot ok.\nAlle Dienste gestartet."}}}},
+    {n:"Geheimschrift",m:"Die Nachricht ist verschlüsselt. Entschlüssle sie.",flag:"GHOST{decode_all_the_things}",
+     h:["Das Gleichheitszeichen am Ende ist typisch für Base64.","decode b64 <datei> entschlüsselt eine Datei.","Probier: decode b64 message.b64"],
+     fs:{home:{ghost:{"info.txt":"Die Nachricht sieht seltsam aus. Ist das Base64?","message.b64":btoa("GHOST{decode_all_the_things}")}}}},
+    {n:"Der Tresor",m:"Der Tresor ist gesperrt. Das Passwort liegt irgendwo, und es ist verschleiert.",flag:"GHOST{three_steps_ahead}",
+     h:["Beginne bei mail.txt.","Im Ordner /srv/backup liegt eine versteckte Datei. rot13 entschlüsselst du mit decode rot13 <datei>.","In /srv/vault: unlock vault.dat <passwort>, danach cat vault.dat."],
+     fs:{home:{ghost:{"mail.txt":"Von: admin\nDas Tresor-Passwort liegt im Backup (/srv/backup).\nKeine Sorge, ich habe es mit rot13 verschleiert."}},
+         srv:{backup:{".note":rot13("secret2026"),"old.zip":"(Binärdaten)"},vault:{"vault.dat":{_f:1,pw:"secret2026",t:"GHOST{three_steps_ahead}"}}}}}
+  ];
+  var CMDS=["ls","cd","pwd","cat","grep","decode","unlock","submit","hint","help","clear","level","whoami","echo"];
+  var S={lvl:0,reached:0,cmds:0},fs,cwd,hintN=0,busy=false,hist=[],hi=0;
+  var out=$("out"),inp=$("in");
+
+  function clone(o){return JSON.parse(JSON.stringify(o))}
+  function isDir(n){return n&&typeof n=="object"&&!n._f}
+  function isFile(n){return typeof n=="string"||(n&&n._f)}
+  function get(parts){var n=fs;for(var i=0;i<parts.length;i++){if(!isDir(n)||!(parts[i] in n))return;n=n[parts[i]]}return n}
+  function resolve(p){
+    p=p||"";var a=p.charAt(0)=="/"?[]:cwd.slice();
+    if(p.charAt(0)=="~"){a=["home","ghost"];p=p.slice(1)}
+    p.split("/").forEach(function(s){if(!s||s==".")return;if(s=="..")a.pop();else a.push(s)});return a;
+  }
+  function path(){var s="/"+cwd.join("/");return s=="/home/ghost"?"~":s.replace("/home/ghost","~")}
+  function print(t,c){var d=document.createElement("div");if(c)d.className=c;d.textContent=t;out.appendChild(d);out.scrollTop=out.scrollHeight}
+  function prompt(){$("ps").textContent="ghost@e"+(S.lvl+1)+":"+path()+"$";$("title").textContent="ghost@ebene-"+(S.lvl+1)+" — "+LV[S.lvl].n}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+  function content(n){return typeof n=="string"?n:n.t}
+
+  function start(i,msg){
+    S.lvl=i;fs=clone(LV[i].fs);cwd=["home","ghost"];hintN=0;busy=false;out.innerHTML="";
+    $("lv").textContent="Ebene "+(i+1)+" von "+LV.length;$("mt").textContent=LV[i].n;$("mm").textContent=LV[i].m;
+    print("GHOSTSHELL v1.0","ok");print("Verbindung hergestellt. "+(msg||"Tippe 'help' für Befehle."),"dim");print("");
+    print("Ebene "+(i+1)+": "+LV[i].n,"err");print(LV[i].m,"dim");print("");prompt();save();
+  }
+
+  var C={
+    help:function(){print("Befehle: "+CMDS.join(", "),"dim");print("Ziel: Finde die Flagge GHOST{…} und sende sie mit: submit <flagge>","dim")},
+    whoami:function(){print("ghost")},
+    echo:function(a){print(a.join(" "))},
+    pwd:function(){print("/"+cwd.join("/"))},
+    clear:function(){out.innerHTML=""},
+    ls:function(a){
+      var all=a.indexOf("-a")>-1,t=a.filter(function(x){return x.charAt(0)!="-"})[0],n=get(resolve(t));
+      if(n===undefined)return print("ls: "+t+": nicht gefunden","err");
+      if(isFile(n))return print(t);
+      var k=Object.keys(n).filter(function(x){return all||x.charAt(0)!="."}).sort().map(function(x){return isDir(n[x])?x+"/":x});
+      print(k.length?k.join("   "):"(leer)",k.length?"":"dim");
+    },
+    cd:function(a){
+      var p=a[0]?resolve(a[0]):["home","ghost"],n=get(p);
+      if(n===undefined)return print("cd: "+a[0]+": nicht gefunden","err");
+      if(!isDir(n))return print("cd: "+a[0]+": ist kein Ordner","err");
+      cwd=p;
+    },
+    cat:function(a){
+      if(!a.length)return print("cat: Datei fehlt","err");
+      a.forEach(function(f){
+        var n=get(resolve(f));
+        if(n===undefined)print("cat: "+f+": nicht gefunden","err");
+        else if(isDir(n))print("cat: "+f+": ist ein Verzeichnis","err");
+        else if(n._f&&!n.open)print("Zugriff verweigert: "+f+" ist gesperrt. Nutze: unlock "+f+" <passwort>","err");
+        else print(content(n));
+      });
+    },
+    grep:function(a){
+      if(a.length<2)return print("Benutzung: grep <wort> <datei>","err");
+      var n=get(resolve(a[1]));
+      if(n===undefined||!isFile(n))return print("grep: "+a[1]+": keine Datei","err");
+      if(n._f&&!n.open)return print("Zugriff verweigert: Datei ist gesperrt.","err");
+      var w=a[0].toLowerCase(),r=content(n).split("\n").filter(function(l){return l.toLowerCase().indexOf(w)>-1});
+      if(r.length)r.forEach(function(l){print(l)});else print("(keine Treffer)","dim");
+    },
+    decode:function(a){
+      if(a.length<2)return print("Benutzung: decode <b64|rot13|hex> <datei oder text>","err");
+      var t=a[0],rest=a.slice(1).join(" "),n=get(resolve(rest));
+      if(n!==undefined&&isFile(n))rest=n._f&&!n.open?"":content(n);
+      rest=rest.trim();
+      try{
+        if(t=="b64")print(atob(rest),"ok");
+        else if(t=="rot13")print(rot13(rest),"ok");
+        else if(t=="hex")print(rest.replace(/\s/g,"").match(/../g).map(function(h){return String.fromCharCode(parseInt(h,16))}).join(""),"ok");
+        else print("decode: unbekannt: "+t+" (b64, rot13, hex)","err");
+      }catch(e){print("decode: Das sieht nicht nach "+t+" aus.","err")}
+    },
+    unlock:function(a){
+      if(a.length<2)return print("Benutzung: unlock <datei> <passwort>","err");
+      var n=get(resolve(a[0]));
+      if(n===undefined||!n._f)return print("unlock: "+a[0]+": nicht gesperrt oder nicht gefunden","err");
+      if(a[1]==n.pw){n.open=1;print("Entsperrt. Du kannst die Datei jetzt lesen.","ok")}else print("Falsches Passwort.","bad");
+    },
+    hint:function(){
+      var h=LV[S.lvl].h;if(hintN>=h.length)return print("Keine weiteren Hinweise.","dim");
+      print("Hinweis "+(hintN+1)+"/"+h.length+": "+h[hintN++],"err");
+    },
+    level:function(a){
+      if(!a.length){LV.forEach(function(l,i){print((i==S.lvl?"> ":"  ")+(i+1)+". "+l.n+(i<S.reached?" ✓":i==S.reached?"":" (gesperrt)"),i==S.lvl?"ok":"dim")});return}
+      var i=parseInt(a[0],10)-1;
+      if(!(i>=0&&i<LV.length)||i>S.reached)return print("level: diese Ebene ist noch gesperrt.","err");
+      start(i);
+    },
+    submit:function(a){
+      var f=a.join(" ").trim();
+      if(!f)return print("Benutzung: submit <flagge>","err");
+      if(f!=LV[S.lvl].flag)return print("Falsche Flagge. Weitersuchen.","bad");
+      print("✔ ZUGRIFF GEWÄHRT. Ebene "+(S.lvl+1)+" geknackt.","ok");
+      S.reached=Math.max(S.reached,Math.min(S.lvl+1,LV.length-1));save();busy=true;
+      if(S.lvl==LV.length-1){
+        print("");print("★ Alle "+LV.length+" Ebenen geknackt! Befehle insgesamt: "+S.cmds+".","ok");print("Mit 'level 1' kannst du von vorn beginnen.","dim");busy=false;
+      }else{print("Verbinde mit nächstem System …","dim");setTimeout(function(){start(S.lvl+1)},1300)}
+    }
+  };
+
+  function run(line){
+    var d=document.createElement("div"),s1=document.createElement("span"),s2=document.createElement("span");
+    s1.className="ok";s1.textContent=$("ps").textContent+" ";s2.className="cmd";s2.textContent=line;
+    d.appendChild(s1);d.appendChild(s2);out.appendChild(d);out.scrollTop=out.scrollHeight;
+    var p=line.trim().split(/\s+/);if(!p[0])return;
+    S.cmds++;var c=p[0];
+    if(C.hasOwnProperty(c))C[c](p.slice(1));else print("bash: "+c+": Befehl nicht gefunden. Tippe 'help'.","err");
+    save();prompt();
+  }
+  function complete(){
+    var v=inp.value,m=v.match(/(\S*)$/),tok=m[1],first=v.trim().indexOf(" ")<0&&v.indexOf(" ")<0,opts;
+    if(first)opts=CMDS;
+    else{
+      var i=tok.lastIndexOf("/"),dir=i>=0?tok.slice(0,i+1):"",n=get(resolve(dir||"."));
+      opts=isDir(n)?Object.keys(n).filter(function(x){return x.charAt(0)!="."||tok.slice(i+1).charAt(0)=="."}).map(function(x){return dir+x+(isDir(n[x])?"/":"")}):[];
+    }
+    opts=opts.filter(function(o){return o.indexOf(tok)==0});
+    if(opts.length==1)inp.value=v.slice(0,v.length-tok.length)+opts[0]+(opts[0].slice(-1)=="/"?"":" ");
+    else if(opts.length>1)print(opts.join("   "),"dim");
+  }
+  inp.addEventListener("keydown",function(e){
+    if(e.key=="Enter"){
+      if(busy)return;var v=inp.value;inp.value="";
+      if(v.trim()){hist.push(v);hi=hist.length}
+      run(v);
+    }else if(e.key=="Tab"){e.preventDefault();complete()}
+    else if(e.key=="ArrowUp"){e.preventDefault();if(hi>0){hi--;inp.value=hist[hi]}}
+    else if(e.key=="ArrowDown"){e.preventDefault();if(hi<hist.length-1){hi++;inp.value=hist[hi]}else{hi=hist.length;inp.value=""}}
+  });
+  $("term").addEventListener("click",function(){if(!getSelection().toString())inp.focus()});
+  $("reset").addEventListener("click",function(){
+    if(!confirm("Fortschritt wirklich löschen?"))return;
+    S={lvl:0,reached:0,cmds:0};start(0);
+  });
+
+  try{var d=JSON.parse(localStorage.getItem(KEY)||"null");if(d){S.reached=Math.min(+d.reached||0,LV.length-1);S.cmds=+d.cmds||0;S.lvl=Math.min(+d.lvl||0,LV.length-1)}}catch(e){}
+  start(S.lvl,S.lvl||S.reached?"Willkommen zurück.":null);
+})();
+</script>
+</body>
+</html>
